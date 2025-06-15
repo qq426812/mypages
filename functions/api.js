@@ -1,5 +1,5 @@
 export async function onRequest(context) {
-return new Response("Hello, world!");
+
   const { request, env } = context;
   const url = new URL(request.url);
 
