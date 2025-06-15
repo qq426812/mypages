@@ -6,8 +6,16 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
-    input, button { padding: 8px; margin: 5px 0; width: 100%; }
+    input, button, textarea { padding: 8px; margin: 5px 0; width: 100%; }
     #qrcode { margin-top: 20px; text-align: center; }
+    #qrcode a {
+      display: block;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #007bff;
+      text-decoration: underline;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -17,12 +25,14 @@
   <button id="generateBtn">生成二维码</button>
 
   <div id="qrcode"></div>
+  <a id="qrcodeLink" href="#" target="_blank" style="display: none;"></a>
 
   <script>
     const submitBtn = document.getElementById("submitBtn");
     const generateBtn = document.getElementById("generateBtn");
     const contentInput = document.getElementById("content");
     const qrcodeDiv = document.getElementById("qrcode");
+    const qrcodeLink = document.getElementById("qrcodeLink");
 
     submitBtn.onclick = async () => {
       const content = contentInput.value.trim();
@@ -49,9 +59,16 @@
       if (result.success && result.id) {
         const url = `${location.origin}/list.html?id=${result.id}`;
         qrcodeDiv.innerHTML = "";
+
+        // 生成二维码
         QRCode.toCanvas(document.createElement("canvas"), url, (err, canvas) => {
           if (!err) qrcodeDiv.appendChild(canvas);
         });
+
+        // 显示链接
+        qrcodeLink.href = url;
+        qrcodeLink.textContent = "点击打开内容链接：" + url;
+        qrcodeLink.style.display = "block";
       } else {
         alert("获取最新数据失败：" + result.error);
       }
