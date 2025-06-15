@@ -1,48 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
   <title>提交内容</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    textarea { width: 100%; height: 100px; }
-    button { padding: 10px 20px; margin-top: 10px; }
-    #qrcode { margin-top: 20px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    #qrcode {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <h2>提交内容</h2>
   <textarea id="content" placeholder="请输入内容..."></textarea><br>
   <button id="submitBtn">提交</button>
+
   <div id="result"></div>
   <div id="qrcode"></div>
 
+  <!-- 引入二维码生成库 -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    const submitBtn = document.getElementById("submitBtn");
-    submitBtn.onclick = async () => {
+    document.getElementById("submitBtn").onclick = async () => {
       const content = document.getElementById("content").value.trim();
-      if (!content) return alert("请输入内容");
+      if (!content) {
+        alert("请输入内容");
+        return;
+      }
 
-      const res = await fetch('/api', {
+      // 发送数据到后端 API
+      const response = await fetch('/api', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ content })
       });
-      const result = await res.json();
-      if (result.success) {
-        document.getElementById("result").innerText = "提交成功，记录ID：" + result.id;
 
-        const url = `${location.origin}/list.html?id=${result.id}`;
-        QRCode.toCanvas(document.createElement('canvas'), url, function (err, canvas) {
-          if (err) return console.error(err);
-          const qrDiv = document.getElementById("qrcode");
-          qrDiv.innerHTML = "<p>扫码查看：</p>";
-          qrDiv.appendChild(canvas);
+      const result = await response.json();
+
+      if (result.success && result.id) {
+        const id = result.id;
+        const link = `${location.origin}/list.html?id=${id}`;
+
+        // 显示链接
+        document.getElementById("result").innerHTML = `
+          <p>提交成功！记录 ID：${id}</p>
+          <p>访问链接：<a href="${link}" target="_blank">${link}</a></p>
+        `;
+
+        // 生成二维码
+        const canvas = document.createElement("canvas");
+        QRCode.toCanvas(canvas, link, error => {
+          if (error) {
+            console.error(error);
+            document.getElementById("qrcode").innerText = "二维码生成失败";
+          } else {
+            document.getElementById("qrcode").innerHTML = "<p>扫码查看：</p>";
+            document.getElementById("qrcode").appendChild(canvas);
+          }
         });
       } else {
-        document.getElementById("result").innerText = "提交失败";
+        document.getElementById("result").innerText = "提交失败，请稍后重试";
       }
     };
   </script>
