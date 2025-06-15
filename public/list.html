@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>查看内容</title>
+</head>
+<body>
+  <h1>已提交内容</h1>
+  <ul id="contentList"></ul>
+
+  <script>
+    async function loadData() {
+      const res = await fetch('/api');
+      const data = await res.json();
+
+      const list = document.getElementById("contentList");
+      list.innerHTML = "";
+      data.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.content} [${item.created_at}]`;
+        list.appendChild(li);
+      });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
