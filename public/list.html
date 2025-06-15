@@ -1,28 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>查看内容</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; word-wrap: break-word; }
+    .record { background: #f5f5f5; padding: 15px; border-radius: 8px; }
+  </style>
 </head>
 <body>
-  <h1>已提交内容</h1>
-  <ul id="contentList"></ul>
+  <h2>查看内容</h2>
+  <div id="record" class="record">加载中...</div>
 
   <script>
-    async function loadData() {
-      const res = await fetch('/api');
-      const data = await res.json();
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
 
-      const list = document.getElementById("contentList");
-      list.innerHTML = "";
-      data.forEach(item => {
-        const li = document.createElement("li");
-        li.textContent = `${item.content} [${item.created_at}]`;
-        list.appendChild(li);
-      });
+    async function fetchRecord(id) {
+      const res = await fetch('/api?id=' + id);
+      const result = await res.json();
+      const recordDiv = document.getElementById("record");
+
+      if (result && result.content) {
+        recordDiv.innerHTML = `<p><strong>ID：</strong>${id}</p><p><strong>内容：</strong>${result.content}</p><p><strong>时间：</strong>${result.created_at}</p>`;
+      } else {
+        recordDiv.innerHTML = "未找到记录";
+      }
     }
 
-    loadData();
+    if (id) fetchRecord(id);
+    else document.getElementById("record").innerText = "未提供 ID";
   </script>
 </body>
 </html>
