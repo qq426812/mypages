@@ -1,7 +1,6 @@
-export async function onRequest(context) {
-
+export const onRequest = async (context) => {
   const { request, env } = context;
-  const url = new URL(request.url);
+  const { method } = request;
 
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -9,42 +8,86 @@ export async function onRequest(context) {
     "Access-Control-Allow-Headers": "Content-Type",
   };
 
-  if (request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (request.method === "POST") {
-    const data = await request.json();
-    const content = data?.content;
-
-    if (!content) {
-      return new Response(JSON.stringify({ error: "Missing content" }), {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    await env.DB.prepare(
-      `INSERT INTO records (content, created_at) VALUES (?, datetime('now'))`
-    ).bind(content).run();
-
-    return new Response(JSON.stringify({ success: true }), {
+  // 预检请求处理
+  if (method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
       headers: corsHeaders,
     });
   }
 
-  if (request.method === "GET") {
-    const { results } = await env.DB.prepare(
-      "SELECT id, content, created_at FROM records ORDER BY created_at DESC LIMIT 100"
-    ).all();
+  // POST：写入数据
+  if (method === "POST") {
+    try {
+      const body = await request.json();
+      const content = body.content?.trim();
 
-    return new Response(JSON.stringify(results), {
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+      if (!content) {
+        return new Response(JSON.stringify({ success: false, error: "内容为空" }), {
+          status: 400,
+          headers: corsHeaders,
+        });
+      }
+
+      const now = new Date().toISOString();
+
+      const stmt = env.DB.prepare(
+        "INSERT INTO records (content, created_at) VALUES (?, ?)"
+      );
+      const result = await stmt.bind(content, now).run();
+
+      const id = result.lastRowId;
+
+      return new Response(JSON.stringify({ success: true, id }), {
+        status: 200,
+        headers: corsHeaders,
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: e.message }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
   }
 
-  return new Response("Method Not Allowed", { status: 405, headers: corsHeaders });
-}
+  // GET：根据 ID 查询
+  if (method === "GET") {
+    try {
+      const url = new URL(request.url);
+      const id = url.searchParams.get("id");
+
+      if (!id) {
+        return new Response(JSON.stringify({ error: "缺少参数 id" }), {
+          status: 400,
+          headers: corsHeaders,
+        });
+      }
+
+      const stmt = env.DB.prepare("SELECT * FROM records WHERE id = ?");
+      const row = await stmt.bind(id).first();
+
+      if (!row) {
+        return new Response(JSON.stringify({ error: "未找到记录" }), {
+          status: 404,
+          headers: corsHeaders,
+        });
+      }
+
+      return new Response(JSON.stringify(row), {
+        status: 200,
+        headers: corsHeaders,
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
+  }
+
+  // 不支持的请求方法
+  return new Response(JSON.stringify({ error: "不支持的请求方法" }), {
+    status: 405,
+    headers: corsHeaders,
+  });
+};
