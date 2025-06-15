@@ -59,6 +59,8 @@
       });
 
       const result = await response.json();
+     
+      console.log("后端返回结果：", result);
 
       if (result.success && result.id) {
         const id = result.id;
