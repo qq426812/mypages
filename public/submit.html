@@ -43,7 +43,7 @@
     };
 
     generateBtn.onclick = async () => {
-      const response = await fetch("/api/latest");
+      const response = await fetch("/latest");
       const result = await response.json();
 
       if (result.success && result.id) {
