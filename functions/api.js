@@ -17,38 +17,40 @@ export const onRequest = async (context) => {
   }
 
   // POST：写入数据
-  if (method === "POST") {
-    try {
-      const body = await request.json();
-      const content = body.content?.trim();
+ if (method === "POST") {
+  try {
+    const body = await request.json();
+    const content = body.content?.trim();
 
-      if (!content) {
-        return new Response(JSON.stringify({ success: false, error: "内容为空" }), {
-          status: 400,
-          headers: corsHeaders,
-        });
-      }
-
-      const now = new Date().toISOString();
-
-      const stmt = env.DB.prepare(
-        "INSERT INTO records (content, created_at) VALUES (?, ?)"
-      );
-      const result = await stmt.bind(content, now).run();
-
-      const id = result.lastRowId;
-
-      return new Response(JSON.stringify({ success: true, id }), {
-        status: 200,
-        headers: corsHeaders,
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ success: false, error: e.message }), {
-        status: 500,
+    if (!content) {
+      return new Response(JSON.stringify({ success: false, error: "内容为空" }), {
+        status: 400,
         headers: corsHeaders,
       });
     }
+
+    const now = new Date().toISOString();
+
+    const stmt = env.DB.prepare(
+      "INSERT INTO records (content, created_at) VALUES (?, ?)"
+    );
+    const result = await stmt.bind(content, now).run();
+
+    const id = result.lastRowId;
+
+    // ✅ 正确返回 JSON 对象，而不是裸 true
+    return new Response(JSON.stringify({ success: true, id }), {
+      status: 200,
+      headers: corsHeaders,
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ success: false, error: e.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
+}
+
 
   // GET：根据 ID 查询
   if (method === "GET") {
